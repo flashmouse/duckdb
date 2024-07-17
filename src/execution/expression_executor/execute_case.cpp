@@ -21,6 +21,9 @@ unique_ptr<ExpressionState> ExpressionExecutor::InitializeState(const BoundCaseE
 		result->AddChild(case_check.when_expr.get());
 		result->AddChild(case_check.then_expr.get());
 	}
+	if (expr.case_expr) {
+		result->AddChild(expr.case_expr.get());
+	}
 	result->AddChild(expr.else_expr.get());
 	result->Finalize();
 	return std::move(result);
@@ -37,6 +40,17 @@ void ExpressionExecutor::Execute(const BoundCaseExpression &expr, ExpressionStat
 	auto current_false_sel = &state.false_sel;
 	auto current_sel = sel;
 	idx_t current_count = count;
+	if (expr.case_expr && expr.case_expr->IsVolatile()) {
+		// resolve the children
+		auto case_state = state.child_states[state.child_states.size()-2].get();
+		case_state->intermediate_chunk.Reset();
+		Vector result(expr.case_expr->return_type);
+		Execute(*expr.case_expr, case_state, sel, count, result);
+		for (auto &check : expr.case_checks) {
+			D_ASSERT(check.when_expr->expression_class == ExpressionClass::BOUND_COMPARISON);
+		}
+	}
+
 	for (idx_t i = 0; i < expr.case_checks.size(); i++) {
 		auto &case_check = expr.case_checks[i];
 		auto &intermediate_result = state.intermediate_chunk.data[i * 2 + 1];
@@ -75,7 +89,7 @@ void ExpressionExecutor::Execute(const BoundCaseExpression &expr, ExpressionStat
 			Execute(*expr.else_expr, else_state, sel, count, result);
 			return;
 		} else {
-			auto &intermediate_result = state.intermediate_chunk.data[expr.case_checks.size() * 2];
+			auto &intermediate_result = state.intermediate_chunk.data.back();
 
 			D_ASSERT(current_sel);
 			Execute(*expr.else_expr, else_state, current_sel, current_count, intermediate_result);

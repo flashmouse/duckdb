@@ -30,6 +30,7 @@ unique_ptr<ParsedExpression> Transformer::TransformCase(duckdb_libpgquery::PGCas
 		case_node->else_expr = make_uniq<ConstantExpression>(Value(LogicalType::SQLNULL));
 	}
 	SetQueryLocation(*case_node, root.location);
+	case_node->case_expr = std::move(root_arg);
 	return std::move(case_node);
 }
 

@@ -15,6 +15,9 @@ string CaseExpression::ToString() const {
 }
 
 bool CaseExpression::Equal(const CaseExpression &a, const CaseExpression &b) {
+	if (a.case_expr != b.case_expr) {
+		return false;
+	}
 	if (a.case_checks.size() != b.case_checks.size()) {
 		return false;
 	}
@@ -42,6 +45,9 @@ unique_ptr<ParsedExpression> CaseExpression::Copy() const {
 		copy->case_checks.push_back(std::move(new_check));
 	}
 	copy->else_expr = else_expr->Copy();
+	if (case_expr) {
+		copy->case_expr = case_expr->Copy();
+	}
 	return std::move(copy);
 }
 

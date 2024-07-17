@@ -9,6 +9,9 @@ namespace duckdb {
 BindResult ExpressionBinder::BindExpression(CaseExpression &expr, idx_t depth) {
 	// first try to bind the children of the case expression
 	ErrorData error;
+	if (expr.case_expr) {
+		BindChild(expr.case_expr, depth, error);
+	}
 	for (auto &check : expr.case_checks) {
 		BindChild(check.when_expr, depth, error);
 		BindChild(check.then_expr, depth, error);
@@ -43,6 +46,11 @@ BindResult ExpressionBinder::BindExpression(CaseExpression &expr, idx_t depth) {
 		result->case_checks.push_back(std::move(result_check));
 	}
 	result->else_expr = BoundCastExpression::AddCastToType(context, std::move(else_expr), return_type);
+	if (expr.case_expr) {
+		auto &case_expr = BoundExpression::GetExpression(*expr.case_expr);
+		auto return_type = ExpressionBinder::GetExpressionReturnType(*case_expr);
+		result->case_expr = BoundCastExpression::AddCastToType(context, std::move(BoundExpression::GetExpression(*expr.case_expr)), return_type);
+	}
 	return BindResult(std::move(result));
 }
 } // namespace duckdb
