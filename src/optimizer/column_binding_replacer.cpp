@@ -30,6 +30,7 @@ void ColumnBindingReplacer::VisitExpression(unique_ptr<Expression> *expression) 
 		for (const auto &replace_binding : replacement_bindings) {
 			if (bound_column_ref.binding == replace_binding.old_binding) {
 				bound_column_ref.binding = replace_binding.new_binding;
+				bound_column_ref.alias = "";
 				if (replace_binding.replace_type) {
 					bound_column_ref.return_type = replace_binding.new_type;
 				}
