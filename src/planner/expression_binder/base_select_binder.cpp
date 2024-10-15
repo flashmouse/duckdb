@@ -1,6 +1,8 @@
 #include "duckdb/planner/expression_binder/base_select_binder.hpp"
 
+#include "duckdb/common/enums/expression_type.hpp"
 #include "duckdb/common/string_util.hpp"
+#include "duckdb/parser/expression/case_expression.hpp"
 #include "duckdb/parser/expression/columnref_expression.hpp"
 #include "duckdb/parser/expression/operator_expression.hpp"
 #include "duckdb/planner/expression/bound_operator_expression.hpp"
@@ -34,6 +36,14 @@ BindResult BaseSelectBinder::BindExpression(unique_ptr<ParsedExpression> &expr_p
 		return BindResult(BinderException::Unsupported(expr, "SELECT clause cannot contain DEFAULT clause"));
 	case ExpressionClass::WINDOW:
 		return BindWindow(expr.Cast<WindowExpression>(), depth);
+	case ExpressionClass::CASE: {
+		auto &case_expr = expr.Cast<CaseExpression>();
+		auto result = ExpressionBinder::BindExpression(case_expr, depth);
+		if (!result.HasError() && case_expr.root_expr) {
+			this->node.cases.push_back(case_expr);
+		}
+		return result;
+	}
 	default:
 		return ExpressionBinder::BindExpression(expr_ptr, depth, root_expression);
 	}

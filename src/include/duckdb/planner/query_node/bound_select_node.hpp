@@ -9,6 +9,7 @@
 #pragma once
 
 #include "duckdb/planner/bound_query_node.hpp"
+#include "duckdb/planner/expression/bound_case_expression.hpp"
 #include "duckdb/planner/logical_operator.hpp"
 #include "duckdb/parser/expression_map.hpp"
 #include "duckdb/planner/bound_tableref.hpp"
@@ -91,6 +92,8 @@ public:
 
 	//! Unnest expression
 	unordered_map<idx_t, BoundUnnestNode> unnests;
+
+	vector<idx_t> cases;
 
 	//! Index of pruned node
 	idx_t prune_index;

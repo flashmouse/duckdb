@@ -1,6 +1,8 @@
 #include "duckdb/planner/binder.hpp"
 #include "duckdb/planner/expression/bound_columnref_expression.hpp"
+#include "duckdb/planner/expression/bound_comparison_expression.hpp"
 #include "duckdb/planner/expression/bound_reference_expression.hpp"
+#include "duckdb/planner/logical_tokens.hpp"
 #include "duckdb/planner/operator/list.hpp"
 #include "duckdb/planner/operator/logical_dummy_scan.hpp"
 #include "duckdb/planner/operator/logical_limit.hpp"
@@ -106,6 +108,18 @@ unique_ptr<LogicalOperator> Binder::CreatePlan(BoundSelectNode &statement) {
 
 	for (auto &expr : statement.select_list) {
 		PlanSubqueries(expr, root);
+	}
+
+	if (!statement.cases.empty()) {
+		for (auto &case_expr: statement.cases) {
+			auto &root = case_expr.case_checks[0].when_expr->Cast<BoundComparisonExpression>().left;
+			auto root_ref = make_uniq<BoundColumnRefExpression>(root->return_type, ColumnBinding(statement.projection_index, statement.column_count));
+			for (auto &case_check_expr: case_expr.case_checks) {
+				auto &when = case_check_expr.when_expr->Cast<BoundComparisonExpression>();
+				when.left = root_ref->Copy();
+			}
+			statement.select_list.push_back(std::move(root));
+		}
 	}
 
 	auto proj = make_uniq<LogicalProjection>(statement.projection_index, std::move(statement.select_list));
