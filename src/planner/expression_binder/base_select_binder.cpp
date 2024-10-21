@@ -5,6 +5,7 @@
 #include "duckdb/parser/expression/case_expression.hpp"
 #include "duckdb/parser/expression/columnref_expression.hpp"
 #include "duckdb/parser/expression/operator_expression.hpp"
+#include "duckdb/planner/expression/bound_comparison_expression.hpp"
 #include "duckdb/planner/expression/bound_operator_expression.hpp"
 #include "duckdb/planner/expression/bound_constant_expression.hpp"
 #include "duckdb/parser/expression/window_expression.hpp"
@@ -44,6 +45,9 @@ BindResult BaseSelectBinder::BindExpression(unique_ptr<ParsedExpression> &expr_p
 			auto root_expr = std::move(case_result.root_expr);
 			case_result.root_expr = make_uniq<BoundColumnRefExpression>(root_expr->return_type, ColumnBinding(node.case_index, node.cases.size()));
 			node.cases.push_back(std::move(root_expr));
+			for (auto &case_check: case_result.case_checks) {
+				case_check.when_expr->Cast<BoundComparisonExpression>().left = case_result.root_expr->Copy();
+			}
 		}
 		return result;
 	}

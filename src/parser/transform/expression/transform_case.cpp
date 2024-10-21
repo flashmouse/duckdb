@@ -15,6 +15,7 @@ unique_ptr<ParsedExpression> Transformer::TransformCase(duckdb_libpgquery::PGCas
 		auto test_raw = TransformExpression(PGPointerCast<duckdb_libpgquery::PGNode>(w->expr));
 		unique_ptr<ParsedExpression> test;
 		if (root_arg) {
+			case_node->root_expr = true;
 			case_check.when_expr =
 			    make_uniq<ComparisonExpression>(ExpressionType::COMPARE_EQUAL, root_arg->Copy(), std::move(test_raw));
 		} else {

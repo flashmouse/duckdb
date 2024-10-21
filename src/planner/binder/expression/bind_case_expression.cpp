@@ -1,6 +1,7 @@
 #include "duckdb/parser/expression/case_expression.hpp"
 #include "duckdb/planner/expression/bound_case_expression.hpp"
 #include "duckdb/planner/expression/bound_cast_expression.hpp"
+#include "duckdb/planner/expression/bound_comparison_expression.hpp"
 #include "duckdb/planner/expression_binder.hpp"
 #include "duckdb/planner/binder.hpp"
 
@@ -43,6 +44,9 @@ BindResult ExpressionBinder::BindExpression(CaseExpression &expr, idx_t depth) {
 		result->case_checks.push_back(std::move(result_check));
 	}
 	result->else_expr = BoundCastExpression::AddCastToType(context, std::move(else_expr), return_type);
+	if (expr.root_expr) {
+		result->root_expr = result->case_checks[0].when_expr->Cast<BoundComparisonExpression>().left->Copy();
+	}
 	return BindResult(std::move(result));
 }
 } // namespace duckdb

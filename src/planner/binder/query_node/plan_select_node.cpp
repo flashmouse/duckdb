@@ -7,6 +7,7 @@
 #include "duckdb/planner/operator/logical_dummy_scan.hpp"
 #include "duckdb/planner/operator/logical_limit.hpp"
 #include "duckdb/planner/query_node/bound_select_node.hpp"
+#include <utility>
 
 namespace duckdb {
 
@@ -110,24 +111,31 @@ unique_ptr<LogicalOperator> Binder::CreatePlan(BoundSelectNode &statement) {
 		PlanSubqueries(expr, root);
 	}
 
-	auto proj = make_uniq<LogicalProjection>(statement.projection_index, std::move(statement.select_list));
-	auto &projection = *proj;
-	proj->AddChild(std::move(root));
-	root = std::move(proj);
-
 	if (!statement.cases.empty()) {
 		vector<unique_ptr<Expression>> new_select_list;
 		for (auto &expr: statement.cases) {
-			new_select_list.push_back(expr->Copy());
+			new_select_list.push_back(std::move(expr));
 		}
-		for (auto &expr: root->expressions) {
-			new_select_list.push_back(make_uniq<BoundColumnRefExpression>(expr->return_type, ColumnBinding(statement.projection_index, new_select_list.size())));
+		for (auto &expr: statement.select_list) {
+			new_select_list.push_back(std::move(expr));
+		}
+		auto proj = make_uniq<LogicalProjection>(statement.projection_index, std::move(new_select_list));
+		proj->AddChild(std::move(root));
+		root = std::move(proj);
+
+		new_select_list.clear();
+		for (idx_t i = 0; i<root->expressions.size();i++) {
+			new_select_list.push_back(make_uniq<BoundColumnRefExpression>(root->expressions[i]->return_type, ColumnBinding(statement.projection_index, i)));
 		}
 		proj = make_uniq<LogicalProjection>(statement.case_index, std::move(new_select_list));
-		projection = *proj;
+		proj->AddChild(std::move(root));
+		root = std::move(proj);
+	} else {
+		auto proj = make_uniq<LogicalProjection>(statement.projection_index, std::move(statement.select_list));
 		proj->AddChild(std::move(root));
 		root = std::move(proj);
 	}
+	auto &projection = *root;
 
 	// finish the plan by handling the elements of the QueryNode
 	root = VisitQueryNode(statement, std::move(root));

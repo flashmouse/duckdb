@@ -29,7 +29,7 @@ public:
 public:
 	DUCKDB_API CaseExpression();
 
-	unique_ptr<ParsedExpression> root_expr;
+	bool root_expr;
 	vector<CaseCheck> case_checks;
 	unique_ptr<ParsedExpression> else_expr;
 

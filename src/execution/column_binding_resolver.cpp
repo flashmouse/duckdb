@@ -9,6 +9,7 @@
 #include "duckdb/planner/operator/logical_create_index.hpp"
 #include "duckdb/planner/operator/logical_extension_operator.hpp"
 #include "duckdb/planner/operator/logical_insert.hpp"
+#include "duckdb/planner/operator/logical_projection.hpp"
 
 namespace duckdb {
 
@@ -131,6 +132,13 @@ void ColumnBindingResolver::VisitOperator(LogicalOperator &op) {
 	case LogicalOperatorType::LOGICAL_EXTENSION_OPERATOR: {
 		auto &ext_op = op.Cast<LogicalExtensionOperator>();
 		ext_op.ResolveColumnBindings(*this, bindings);
+		return;
+	}
+	case LogicalOperatorType::LOGICAL_PROJECTION: {
+		auto &proj = op.Cast<LogicalProjection>();
+		if (proj.children.size() == 1 && proj.children[0]->type == LogicalOperatorType::LOGICAL_PROJECTION) {
+			bindings = op.children[0]->GetColumnBindings();
+		}
 		return;
 	}
 	default:
