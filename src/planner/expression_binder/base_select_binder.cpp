@@ -40,7 +40,10 @@ BindResult BaseSelectBinder::BindExpression(unique_ptr<ParsedExpression> &expr_p
 		auto &case_expr = expr.Cast<CaseExpression>();
 		auto result = ExpressionBinder::BindExpression(case_expr, depth);
 		if (!result.HasError() && case_expr.root_expr) {
-			this->node.cases.push_back(case_expr);
+			auto &case_result = result.expression->Cast<BoundCaseExpression>();
+			auto root_expr = std::move(case_result.root_expr);
+			case_result.root_expr = make_uniq<BoundColumnRefExpression>(root_expr->return_type, ColumnBinding(node.case_index, node.cases.size()));
+			node.cases.push_back(std::move(root_expr));
 		}
 		return result;
 	}

@@ -110,22 +110,24 @@ unique_ptr<LogicalOperator> Binder::CreatePlan(BoundSelectNode &statement) {
 		PlanSubqueries(expr, root);
 	}
 
-	if (!statement.cases.empty()) {
-		for (auto &case_expr: statement.cases) {
-			auto &root = case_expr.case_checks[0].when_expr->Cast<BoundComparisonExpression>().left;
-			auto root_ref = make_uniq<BoundColumnRefExpression>(root->return_type, ColumnBinding(statement.projection_index, statement.column_count));
-			for (auto &case_check_expr: case_expr.case_checks) {
-				auto &when = case_check_expr.when_expr->Cast<BoundComparisonExpression>();
-				when.left = root_ref->Copy();
-			}
-			statement.select_list.push_back(std::move(root));
-		}
-	}
-
 	auto proj = make_uniq<LogicalProjection>(statement.projection_index, std::move(statement.select_list));
 	auto &projection = *proj;
 	proj->AddChild(std::move(root));
 	root = std::move(proj);
+
+	if (!statement.cases.empty()) {
+		vector<unique_ptr<Expression>> new_select_list;
+		for (auto &expr: statement.cases) {
+			new_select_list.push_back(expr->Copy());
+		}
+		for (auto &expr: root->expressions) {
+			new_select_list.push_back(make_uniq<BoundColumnRefExpression>(expr->return_type, ColumnBinding(statement.projection_index, new_select_list.size())));
+		}
+		proj = make_uniq<LogicalProjection>(statement.case_index, std::move(new_select_list));
+		projection = *proj;
+		proj->AddChild(std::move(root));
+		root = std::move(proj);
+	}
 
 	// finish the plan by handling the elements of the QueryNode
 	root = VisitQueryNode(statement, std::move(root));

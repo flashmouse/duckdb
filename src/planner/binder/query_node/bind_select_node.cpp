@@ -414,6 +414,7 @@ unique_ptr<BoundQueryNode> Binder::BindSelectNode(SelectNode &statement, unique_
 	result->groupings_index = GenerateTableIndex();
 	result->window_index = GenerateTableIndex();
 	result->prune_index = GenerateTableIndex();
+	result->case_index = GenerateTableIndex();
 
 	result->from_table = std::move(from_table);
 	// bind the sample clause

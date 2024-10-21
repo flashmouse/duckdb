@@ -29,6 +29,7 @@ public:
 	BoundCaseExpression(unique_ptr<Expression> when_expr, unique_ptr<Expression> then_expr,
 	                    unique_ptr<Expression> else_expr);
 
+	unique_ptr<Expression> root_expr;
 	vector<BoundCaseCheck> case_checks;
 	unique_ptr<Expression> else_expr;
 

@@ -93,7 +93,8 @@ public:
 	//! Unnest expression
 	unordered_map<idx_t, BoundUnnestNode> unnests;
 
-	vector<idx_t> cases;
+	idx_t case_index;
+	vector<unique_ptr<Expression>> cases;
 
 	//! Index of pruned node
 	idx_t prune_index;
