@@ -99,9 +99,11 @@ void UnnestRewriter::FindCandidates(unique_ptr<LogicalOperator> *op_ptr,
 		}
 		curr_op = &curr_op->get()->children[0];
 	}
-
 	if (curr_op->get()->type == LogicalOperatorType::LOGICAL_UNNEST) {
-		candidates.push_back(op_ptr);
+		D_ASSERT(curr_op->get()->children.size() == 1);
+		if (curr_op->get()->children[0]->type == LogicalOperatorType::LOGICAL_DELIM_GET) {
+			candidates.push_back(op_ptr);
+		}
 	}
 }
 
